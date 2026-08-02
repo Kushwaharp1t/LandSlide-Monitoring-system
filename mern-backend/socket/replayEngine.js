@@ -42,17 +42,36 @@ function updateSpeed(socketId, newSpeed) {
 
 async function fetchReadings(material) {
     if (isMongoConnected()) {
-        return await Reading.find({ material }).sort({ elapsed_sec: 1 }).lean();
+        try {
+            const rows = await Reading.find({ material }).sort({ elapsed_sec: 1 }).lean();
+            if (rows && rows.length > 0) return rows;
+        } catch (e) {
+            console.error('[REPLAY MONGO ERR]', e);
+        }
     }
 
     const db = getSqliteDb();
-    return new Promise((resolve, reject) => {
-        db.all("SELECT * FROM readings WHERE material = ? ORDER BY elapsed_sec ASC", [material], (err, rows) => {
-            if (err) return reject(err);
-            resolve(rows);
-        });
-    });
+    if (db) {
+        try {
+            const rows = await new Promise((resolve) => {
+                db.all("SELECT * FROM readings WHERE material = ? ORDER BY elapsed_sec ASC", [material], (err, rows) => {
+                    if (err) return resolve(null);
+                    resolve(rows);
+                });
+            });
+            if (rows && rows.length > 0) return rows;
+        } catch (e) {
+            console.error('[REPLAY SQLITE ERR]', e);
+        }
+    }
+
+    const mat = (material || 'soil').toLowerCase();
+    const { generateMaterialRows } = require('../utils/seedMongo');
+    if (mat === "sand") return generateMaterialRows("sand", 1800, 1100, 1500);
+    if (mat === "coal") return generateMaterialRows("coal", 3600, 2500, 3100);
+    return generateMaterialRows("soil", 2760, 1800, 2400);
 }
+
 
 async function runReplayLoop(io, socketId, sessionState) {
     try {
