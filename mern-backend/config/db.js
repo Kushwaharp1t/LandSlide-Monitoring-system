@@ -1,7 +1,13 @@
 const mongoose = require('mongoose');
-const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
+
+let sqlite3 = null;
+try {
+    sqlite3 = require('sqlite3').verbose();
+} catch (e) {
+    console.log('[DB NOTICE] sqlite3 native module not available in this environment:', e.message);
+}
 
 let useMongo = false;
 let sqliteDb = null;
@@ -19,19 +25,28 @@ async function connectDB() {
         console.log(`[DB SUCCESS] Connected to MongoDB at ${MONGODB_URI}`);
     } catch (err) {
         console.log(`[DB NOTICE] MongoDB connection timeout/unavailable: ${err.message}`);
-        console.log(`[DB FALLBACK] Switching to SQLite database engine at ${SQLITE_PATH}...`);
-        
         useMongo = false;
-        sqliteDb = new sqlite3.Database(SQLITE_PATH, (sqliteErr) => {
-            if (sqliteErr) {
-                console.error(`[DB ERROR] Failed to connect to SQLite: ${sqliteErr.message}`);
-            } else {
-                console.log('[DB SUCCESS] Connected to SQLite database fallback engine.');
-                initSqliteDb(sqliteDb);
+        
+        if (sqlite3) {
+            console.log(`[DB FALLBACK] Switching to SQLite database engine at ${SQLITE_PATH}...`);
+            try {
+                sqliteDb = new sqlite3.Database(SQLITE_PATH, (sqliteErr) => {
+                    if (sqliteErr) {
+                        console.error(`[DB ERROR] Failed to connect to SQLite: ${sqliteErr.message}`);
+                    } else {
+                        console.log('[DB SUCCESS] Connected to SQLite database fallback engine.');
+                        initSqliteDb(sqliteDb);
+                    }
+                });
+            } catch (e) {
+                console.error('[DB ERROR] SQLite database initialization failed:', e.message);
             }
-        });
+        } else {
+            console.log('[DB NOTICE] Operating in high-speed In-Memory telemetry mode.');
+        }
     }
 }
+
 
 function initSqliteDb(db) {
     db.serialize(() => {
