@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "buildCommand": "cd mern-frontend && npm install && npm run build",
+  "outputDirectory": "mern-frontend/dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
