@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: landslide-monitoring-dashboard
+    env: node
+    buildCommand: cd mern-frontend && npm install && npm run build && cd ../mern-backend && npm install
+    startCommand: cd mern-backend && npm start
+    envVars:
+      - key: PORT
+        value: 5000
+
