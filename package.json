@@ -1,0 +1,9 @@
+{
+  "name": "landslide-monitoring-system",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "cd mern-frontend && npm install && npm run build",
+    "start": "cd mern-backend && node server.js"
+  }
+}
